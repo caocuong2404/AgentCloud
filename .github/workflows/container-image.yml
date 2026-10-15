@@ -51,6 +51,7 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push (linux/amd64)
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -63,7 +64,17 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Emit image digest
+        # build-push-action's digest output is the pushed manifest digest.
+        # steps.meta.outputs.digest is empty here (metadata-action only sets it
+        # for certain bake flows), which is why the first run printed "Digest: ".
         run: |
+          set -euo pipefail
+          digest='${{ steps.build.outputs.digest }}'
+          if [ -z "$digest" ]; then
+            echo "ERROR: build-push-action produced no digest" >&2
+            exit 1
+          fi
           echo "Image published to GHCR (source of truth)."
-          echo "Digest: ${{ steps.meta.outputs.digest }}"
-          echo "Next: run scripts/promote-image.sh to mirror into Cloudflare's managed registry."
+          echo "Digest: $digest"
+          echo "Ref:    ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${digest}"
+          echo "Next:   scripts/promote-image.sh <tag> --update-wrangler"
