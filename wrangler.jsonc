@@ -1,0 +1,29 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "orca-agent-poc",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-14",
+  "workers_dev": true,
+  "observability": { "enabled": false },
+  "vars": {
+    "INSTANCE_SIZE": "standard-1",
+    "POC_MONTHLY_RESERVATION_USD": "4"
+  },
+  "containers": [
+    {
+      "class_name": "AgentWorkspace",
+      "scheduling_policy": "durable_object",
+      "images": {
+        "base": { "dockerfile": "./container/Dockerfile" }
+      }
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      { "name": "AGENT_WORKSPACE", "class_name": "AgentWorkspace" }
+    ]
+  },
+  "exports": {
+    "AgentWorkspace": { "type": "durable-object", "storage": "sqlite" }
+  }
+}

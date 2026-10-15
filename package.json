@@ -1,0 +1,15 @@
+{
+  "name": "cloudflare-agent-orchestration-poc",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check src/index.js && node --check container/supervisor.mjs && node --test",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.136.0"
+  }
+}
