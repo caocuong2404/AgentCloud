@@ -16,11 +16,9 @@
       "images": {
         // Image pipeline (see .github/workflows/container-image.yml + scripts/promote-image.sh):
         //   GitHub Actions (amd64) -> GHCR (source of truth) -> wrangler containers push -> Cloudflare managed registry.
-        // durable_object cannot pull GHCR directly, so the named image must be the
-        // digest-pinned Cloudflare reference produced by scripts/promote-image.sh --update-wrangler.
-        // Until the first promote, `dockerfile` builds locally (works on amd64; arm64 Macs cannot run the x86_64 Orca binary).
-        // build_context defaults to the Dockerfile's directory; use repo root so COPY container/supervisor.mjs resolves.
-        "base": { "dockerfile": "./container/Dockerfile", "build_context": "." }
+        // durable_object cannot pull GHCR directly, so the named image must be a
+        // digest-pinned Cloudflare managed-registry reference.
+        "base": { "image": "registry.cloudflare.com/236e11ca7c49db525c48a5cd243dfb3d/orca-agent-poc-agentcloud@sha256:a3b7b8ec2c664c443407362bb2abdf6e38d523cea57fc859d03c86fcad64f4b0" }
       }
     }
   ],

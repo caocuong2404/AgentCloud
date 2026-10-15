@@ -62,6 +62,10 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          # Cloudflare's managed registry rejects attestation blobs
+          # ("blob unknown to registry"). Emit a plain single-platform image.
+          provenance: false
+          sbom: false
 
       - name: Emit image digest
         # build-push-action's digest output is the pushed manifest digest.
