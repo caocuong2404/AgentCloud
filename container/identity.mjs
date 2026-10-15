@@ -39,11 +39,14 @@ export function encodeIdentityEnv(envelope) {
   return Buffer.from(JSON.stringify(envelope), 'utf8').toString('base64');
 }
 
+// Envelope is a plain object mapping filename -> base64. Arrays and JSON
+// primitives are rejected so an empty/invalid env can never clobber identity.
 export function decodeIdentityEnv(b64) {
   if (typeof b64 !== 'string' || !b64) return null;
   try {
     const parsed = JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
-    return parsed && typeof parsed === 'object' ? parsed : null;
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+    return parsed;
   } catch {
     return null;
   }

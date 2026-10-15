@@ -6,6 +6,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { packIdentity, unpackIdentity, decodeIdentityEnv } from './identity.mjs';
+import { encodePairingUrl, decodePairingUrl } from './pairing.mjs';
 
 const port = Number(process.env.ORCA_PORT || '6768');
 const projectRoot = process.env.ORCA_PROJECT_ROOT || '/workspace';
@@ -53,22 +54,7 @@ const pendingDevice = (name, scope, grants) => ({
   ...(grants?.length ? { grants } : {}),
 });
 
-// Same encoding as orca's pairing code: base64url(JSON payload), schema v2.
-const encodePairingUrl = ({ endpoint, deviceToken, publicKeyB64, pairedDeviceId, scope }) => {
-  const payload = { v: 2, endpoint, deviceToken, publicKeyB64, pairedDeviceId, scope };
-  const code = Buffer.from(JSON.stringify(payload), 'utf8').toString('base64')
-    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-  return `orca://pair?code=${code}`;
-};
-
-const decodePairingUrl = (url) => {
-  try {
-    const code = new URL(url).searchParams.get('code');
-    const b64 = code.replace(/-/g, '+').replace(/_/g, '/');
-    return JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
-  } catch { return null; }
-};
-
+// Pairing URL codec lives in ./pairing.mjs (unit-tested).
 {
   const sample = { endpoint: 'wss://x', deviceToken: 't', publicKeyB64: 'k', pairedDeviceId: 'd', scope: 'mobile' };
   const roundtrip = decodePairingUrl(encodePairingUrl(sample));

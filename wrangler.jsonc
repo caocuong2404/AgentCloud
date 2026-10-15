@@ -14,6 +14,11 @@
       "class_name": "AgentWorkspace",
       "scheduling_policy": "durable_object",
       "images": {
+        // Image pipeline (see .github/workflows/container-image.yml + scripts/promote-image.sh):
+        //   GitHub Actions (amd64) -> GHCR (source of truth) -> wrangler containers push -> Cloudflare managed registry.
+        // durable_object cannot pull GHCR directly, so the named image must be the
+        // digest-pinned Cloudflare reference produced by scripts/promote-image.sh --update-wrangler.
+        // Until the first promote, `dockerfile` builds locally (works on amd64; arm64 Macs cannot run the x86_64 Orca binary).
         // build_context defaults to the Dockerfile's directory; use repo root so COPY container/supervisor.mjs resolves.
         "base": { "dockerfile": "./container/Dockerfile", "build_context": "." }
       }
