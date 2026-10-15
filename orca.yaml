@@ -1,0 +1,9 @@
+# Orca per-workspace environment: on-demand Cloudflare POC container.
+# The shared container is woken on create/resume and stopped on suspend/destroy.
+environmentRecipes:
+  - id: cf-poc
+    name: Cloudflare POC
+    create: ./scripts/orca-vm/cf-poc-create.sh
+    suspend: ./scripts/orca-vm/cf-poc-suspend.sh
+    resume: ./scripts/orca-vm/cf-poc-resume.sh
+    destroy: ./scripts/orca-vm/cf-poc-destroy.sh

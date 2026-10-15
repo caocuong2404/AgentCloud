@@ -6,6 +6,8 @@ const HEALTH_PORT = 8080;
 const LEASE_MS = 60 * 60 * 1000;
 // This should outlive the lease. The durable alarm forcibly destroys the container.
 const INACTIVITY_MS = 90 * 60 * 1000;
+// Opaque envelope { filename: base64 } of Orca runtime identity files.
+const IDENTITY_KEY = 'identityBundle';
 
 function json(value, status = 200) {
   return new Response(JSON.stringify(value), {
@@ -27,6 +29,7 @@ export class AgentWorkspace extends DurableObject {
       void ctx.blockConcurrencyWhile(async () => {
         const lease = await ctx.storage.get('lease');
         if (!lease || lease.expiresAt <= Date.now()) {
+          await this.saveIdentity();
           ctx.container.destroy();
           await ctx.storage.delete('lease');
         } else {
@@ -49,6 +52,29 @@ export class AgentWorkspace extends DurableObject {
     } catch (error) {
       console.error('Workspace error', String(error));
       return json({ error: 'runtime_error', message: String(error) }, 502);
+    }
+  }
+
+  // Opaque envelope { filename: base64 } written by the supervisor at GET /__identity.
+  // Returns true only when a non-empty envelope was stored; never clobbers with {}.
+  async saveIdentity() {
+    const container = this.ctx.container;
+    if (!container?.running) return false;
+    try {
+      const res = await container.getTcpPort(HEALTH_PORT).fetch('http://container/__identity', {
+        signal: AbortSignal.timeout(2500),
+      });
+      if (!res.ok) {
+        await res.body?.cancel();
+        return false;
+      }
+      const envelope = await res.json();
+      if (!envelope || typeof envelope !== 'object' || Object.keys(envelope).length === 0) return false;
+      await this.ctx.storage.put(IDENTITY_KEY, envelope);
+      return true;
+    } catch {
+      // Container may still be starting or already gone.
+      return false;
     }
   }
 
@@ -80,17 +106,21 @@ export class AgentWorkspace extends DurableObject {
     const expiresAt = Date.now() + LEASE_MS;
     await this.ctx.storage.put('lease', { expiresAt, size, pairingAddress, startedAt: Date.now() });
     await this.ctx.storage.setAlarm(expiresAt);
+    const identity = await this.ctx.storage.get(IDENTITY_KEY);
+    const env = {
+      ORCA_PAIRING_ADDRESS: pairingAddress,
+      ORCA_PROJECT_ROOT: '/workspace',
+      ORCA_PORT: String(RUNTIME_PORT),
+      WORKSPACE_GIT_URL: this.env.WORKSPACE_GIT_URL || '',
+    };
+    // Restore prior Orca identity so paired clients survive destroy/start.
+    if (identity) env.ORCA_IDENTITY_B64 = btoa(JSON.stringify(identity));
     try {
       container.start({
         image: container.images.base,
         instance: size,
         enableInternet: true,
-        env: {
-          ORCA_PAIRING_ADDRESS: pairingAddress,
-          ORCA_PROJECT_ROOT: '/workspace',
-          ORCA_PORT: String(RUNTIME_PORT),
-          WORKSPACE_GIT_URL: this.env.WORKSPACE_GIT_URL || '',
-        },
+        env,
       });
       await container.setInactivityTimeout(INACTIVITY_MS);
       return json({ state: 'starting', size, expiresAt, reservedUsd: reserve, note: 'Poll GET /api/status for ready' }, 202);
@@ -117,11 +147,16 @@ export class AgentWorkspace extends DurableObject {
       ready = res.ok;
       await res.body?.cancel();
     } catch { /* Container may still be starting. */ }
+    if (ready && lease && (await this.ctx.storage.get('identitySavedAt')) !== lease.startedAt) {
+      // Mark done only after a successful harvest so a failed save is retried.
+      if (await this.saveIdentity()) await this.ctx.storage.put('identitySavedAt', lease.startedAt);
+    }
     return json({ state: ready ? 'ready' : 'starting', lease, reservedUsd, month: key });
   }
 
   async stop() {
     const running = Boolean(this.ctx.container?.running);
+    if (running) await this.saveIdentity();
     if (running) this.ctx.container.destroy();
     await this.ctx.storage.delete('lease');
     await this.ctx.storage.deleteAlarm();
@@ -158,6 +193,7 @@ export class AgentWorkspace extends DurableObject {
   async alarm() {
     const lease = await this.ctx.storage.get('lease');
     if (!lease) {
+      if (this.ctx.container?.running) await this.saveIdentity();
       if (this.ctx.container?.running) this.ctx.container.destroy();
       return;
     }
@@ -165,6 +201,7 @@ export class AgentWorkspace extends DurableObject {
       await this.ctx.storage.setAlarm(lease.expiresAt);
       return;
     }
+    if (this.ctx.container?.running) await this.saveIdentity();
     if (this.ctx.container?.running) this.ctx.container.destroy();
     await this.ctx.storage.delete('lease');
     console.log('POC lease expired: Container destroyed to bound spend');

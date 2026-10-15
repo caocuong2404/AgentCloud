@@ -14,7 +14,8 @@
       "class_name": "AgentWorkspace",
       "scheduling_policy": "durable_object",
       "images": {
-        "base": { "dockerfile": "./container/Dockerfile" }
+        // build_context defaults to the Dockerfile's directory; use repo root so COPY container/supervisor.mjs resolves.
+        "base": { "dockerfile": "./container/Dockerfile", "build_context": "." }
       }
     }
   ],

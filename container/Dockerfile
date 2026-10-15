@@ -22,6 +22,7 @@ RUN npm install -g @openai/codex \
   && mkdir -p /workspace /app && chown -R agent:agent /workspace /app
 
 COPY --chown=agent:agent container/supervisor.mjs /app/supervisor.mjs
+COPY --chown=agent:agent container/identity.mjs /app/identity.mjs
 WORKDIR /workspace
 USER agent
 ENV HOME=/home/agent \
