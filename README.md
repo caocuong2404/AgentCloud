@@ -1,6 +1,6 @@
 # Cloudflare Agent Runtime POC — Orca first, Herdr later
 
-**Status (2026-10-15):** Source scaffold + static tests only. **Not deployed or end-to-end validated.**
+**Status (2026-10-15):** Deployed to Cloudflare — `https://orca-agent-poc.vnai.workers.dev`, control plane auth-gated (401 without `CONTROL_TOKEN`). 95/95 unit tests pass. **Not end-to-end validated with a paired Orca client.** See `docs/ghcr-pipeline-walkthrough.md` for the GHCR → Cloudflare image pipeline and `docs/TEST_PLAN.md` for open gates.
 
 Goal: A single on-demand Cloudflare Container running an actual `orca serve` process, controlled from Orca desktop and mobile, including when the MacBook is off. It should later become a client-neutral agent runtime for Herdr. This POC deliberately has one workspace, one running Container, and no full job queue or durable filesystem yet.
 
@@ -10,6 +10,7 @@ Goal: A single on-demand Cloudflare Container running an actual `orca serve` pro
 - `src/`: Cloudflare Worker + Durable Object Container API. Admin routes use an HTTP Bearer secret; WebSocket pass-through uses an unguessable path segment suitable for Orca mobile pairing URL.
 - `src/budget.mjs`: pessimistic CPU-at-100%-utilization per-session *reservation* accounting. Existing plan's included quota is intentionally ignored, but this is not an account-level spending cap.
 - `docs/TEST_PLAN.md`: stop/go gates and runbook.
+- `docs/ghcr-pipeline-walkthrough.md`: how the image is built on GitHub, mirrored to Cloudflare, and deployed.
 - `docs/architecture-intent.md`: longer-term intent and guardrails. `AGENTS.md` is the short set of agent instructions.
 
 ## POC quick start
