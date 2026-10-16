@@ -18,7 +18,7 @@
         //   GitHub Actions (amd64) -> GHCR (source of truth) -> wrangler containers push -> Cloudflare managed registry.
         // durable_object cannot pull GHCR directly, so the named image must be a
         // digest-pinned Cloudflare managed-registry reference.
-        "base": { "image": "registry.cloudflare.com/236e11ca7c49db525c48a5cd243dfb3d/orca-agent-poc-agentcloud@sha256:a3b7b8ec2c664c443407362bb2abdf6e38d523cea57fc859d03c86fcad64f4b0" }
+        "base": { "image": "registry.cloudflare.com/236e11ca7c49db525c48a5cd243dfb3d/orca-agent-poc-agentcloud@sha256:83efdb6bcda3574a1d107bffc1a57309cb71e9fe31d6559640edb3b6a1c90289" }
       }
     }
   ],
