@@ -1,6 +1,6 @@
 # POC gate tests and evidence ledger
 
-Status: NOT EXECUTED on user's Mac/Cloudflare account.
+Status: G3 partially executed 2026-10-16 (CF deploy + start/ready/pairing/stop). G0-G2, G4-G7 NOT EXECUTED.
 
 | Gate | Action | Pass criteria | Abort criterion |
 | --- | --- | --- | --- |
@@ -15,24 +15,24 @@ Status: NOT EXECUTED on user's Mac/Cloudflare account.
 
 ## Metrics ledger (fill with measured results, not assumptions)
 
-- Date/time and Orca Desktop version:
-- Orca Linux AppImage version / SHA256:
-- Orca mobile version and OS:
-- Mac OS / Docker version:
-- Container instance size / image size:
-- Cloudflare region inferred from observed telemetry (if available):
-- `docker build` duration:
-- Local cold start to `/health`:
-- Cloudflare cold start to `/api/status` ready:
-- WSS pairing result and error logs:
-- Reconnect time (LAN / cellular):
-- No-traffic 20min test result:
-- Agent CLI, authentication approach, real work, Git diff / test report:
-- Manual stop & alarm test:
-- Real Containers usage (GiB-hrs, vCPU-min, GB-hrs):
-- Worker/DO request charges, egress/logs, model tokens:
-- Marginal spend compared to baseline:
-- Decision: GO / FIX / STOP:
+- Date/time and Orca Desktop version: 2026-10-16T15:47Z; version not queried
+- Orca Linux AppImage version / SHA256: latest at image build (2026-10-16 GH Actions)
+- Orca mobile version and OS: not tested
+- Mac OS / Docker version: macOS arm64 / OrbStack Docker 29.8.2 (promote only, image not run locally)
+- Container instance size / image size: standard-1; image digest sha256:83efdb6b… (single-platform amd64)
+- Cloudflare region inferred from observed telemetry (if available): HKG colo for container logs; DO request colo NRT
+- `docker build` duration: not measured (GitHub Actions `ubuntu-latest`, run 38926143756, ~31s job)
+- Local cold start to `/health`: not tested (G0)
+- Cloudflare cold start to `/api/status` ready: <5s after `POST /api/start` (202 → ready on first poll)
+- WSS pairing result and error logs: runtime + mobile pairing URLs minted; `orca_server_ready` emitted. Benign noise only: dbus socket missing (no system bus in VM), Chromium keyring unencrypted fallback, agent-state-rules HTTP 404
+- Reconnect time (LAN / cellular): not tested (G6)
+- No-traffic 20min test result: not tested (G5)
+- Agent CLI, authentication approach, real work, Git diff / test report: not tested (G4)
+- Manual stop & alarm test: manual stop PASS (`{"state":"stopped","destroyed":true}`, lease cleared); alarm path not tested (G7)
+- Real Containers usage (GiB-hrs, vCPU-min, GB-hrs): not measured
+- Worker/DO request charges, egress/logs, model tokens: not measured
+- Marginal spend compared to baseline: not measured; DO budget counter reserved 0.666 USD across 9 starts (8 pre-fix failures still reserve per design)
+- Decision: GO / FIX / STOP: FIX (completed) → GO for remaining gates. Blocking bug found and fixed: `pairing.mjs` extracted in 0681481 was never COPY'd into the image (`ERR_MODULE_NOT_FOUND`, exit 1). Packaging regression tests added.
 
 ## Notes
 
