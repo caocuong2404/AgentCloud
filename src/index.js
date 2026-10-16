@@ -122,6 +122,13 @@ export class AgentWorkspace extends DurableObject {
         enableInternet: true,
         env,
       });
+      // start() only validates options; monitor() surfaces boot/crash errors in logs.
+      this.ctx.waitUntil(
+        container.monitor().then(
+          () => console.log('container exited cleanly'),
+          (err) => console.error('container error:', err && err.exitCode != null ? `exit=${err.exitCode}` : '', String(err)),
+        ),
+      );
       await container.setInactivityTimeout(INACTIVITY_MS);
       return json({ state: 'starting', size, expiresAt, reservedUsd: reserve, note: 'Poll GET /api/status for ready' }, 202);
     } catch (e) {
